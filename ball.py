@@ -74,7 +74,7 @@ def getVector(pos1: list, pos2: list):
     return unit_vec_AB
 
 # 1 to 800
-for id in range(1, 801):
+for id in range(4, 801):
     # n = 0
     id = str(id).zfill(5)
     video_filename = f"../train/{id}/{id}.mp4"
@@ -149,11 +149,13 @@ for id in range(1, 801):
         # 球位置
         frame_num = 1
         frame_num_t=1
+        color = (100, 255, 200)
+        www = 2
+        vec = [0, 0]
+        speed = 0
+        nn = 0
         for i in range(3):
-            color = (100, 255, 200)
-            www = 2
-            vec = [0, 0]
-            speed = 0
+
 
             cc_frame = current_frame - 3 + i
             x, y = 0, 0
@@ -174,20 +176,31 @@ for id in range(1, 801):
                 )
                 rects = [cv2.boundingRect(ctr) for ctr in cnts]
                 distance = int(math.sqrt(pow(rects[0][0]-last_coordinate[0],2)+pow(rects[0][1]-last_coordinate[1],2)))
-                # print(rects)
+                curr_distance = None
+                max_area_idx = -1
+                max_area = rects[0][2] * rects[0][3]
                 for i in range(len(rects)):
                     curr_distance = int(math.sqrt(pow(rects[i][0]-last_coordinate[0],2)+pow(rects[i][1]-last_coordinate[1],2)))
-                    if curr_distance <= distance:
-                        last_coordinate = [rects[i][0], rects[i][1]]
-                        curr_distance = distance
-                        max_area_idx = i
-                
-                target = rects[max_area_idx]
-                # print(target)
-                x, y = (
-                    int(ratio * (target[0] + target[2] / 2)),
-                    int(ratio * (target[1] + target[3] / 2)),
-                )
+                    area = rects[i][2] * rects[i][3]
+                    if area >= max_area:
+                        if curr_distance <= speed/30 or speed/30 == 0.0 or nn>3:
+                            nn = 0
+                            last_coordinate = [rects[i][0], rects[i][1]]
+                            curr_distance = distance
+                            max_area_idx = i
+                if max_area_idx == -1:
+                    x, y = (
+                        0,
+                        0,
+                    )
+                    nn+=1
+                else:
+                    target = rects[max_area_idx]
+                    # print(target)
+                    x, y = (
+                        int(ratio * (target[0] + target[2] / 2)),
+                        int(ratio * (target[1] + target[3] / 2)),
+                    )
 
             # 路徑
             
@@ -223,7 +236,7 @@ for id in range(1, 801):
 
                 cv2.putText(
                     image_cp,
-                    "Speed: " + str(speed),
+                    "Speed: " + str(speed/30),
                     (10, 250),
                     cv2.FONT_HERSHEY_TRIPLEX,
                     1,
@@ -247,10 +260,12 @@ for id in range(1, 801):
                     draw.ellipse(bbox, fill="yellow")
                     del draw
             opencvImage = cv2.cvtColor(np.array(PIL_image), cv2.COLOR_RGB2BGR)
-            if np.amax(h_pred[i]) > 0:
-                cv2.circle(opencvImage, (x, y), 5, color, www)
-                power = abs(speed/20 if speed/20 <= 120 else 120)
-                cv2.line(opencvImage, (x, y), (int(x + vec[0]*-power),int( y + vec[1]*-power)), (100, 50, 230), 3)
+            if x != 0 and y != 0:
+                
+                if np.amax(h_pred[i]) > 0:
+                    cv2.circle(opencvImage, (x, y), 5, color, www)
+                    power = abs(speed/20 if speed/20 <= 120 else 120)
+                    cv2.line(opencvImage, (x, y), (int(x + vec[0]*-power),int( y + vec[1]*-power)), (100, 50, 230), 3)
 
             cv2.imshow("frame", opencvImage)
             cv2.waitKey(10)
