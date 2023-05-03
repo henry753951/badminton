@@ -74,7 +74,7 @@ def getVector(pos1: list, pos2: list):
     return unit_vec_AB
 
 # 1 to 800
-for id in range(4, 801):
+for id in range(3, 801):
     # n = 0
     id = str(id).zfill(5)
     video_filename = f"../train/{id}/{id}.mp4"
@@ -183,7 +183,9 @@ for id in range(4, 801):
                     curr_distance = int(math.sqrt(pow(rects[i][0]-last_coordinate[0],2)+pow(rects[i][1]-last_coordinate[1],2)))
                     area = rects[i][2] * rects[i][3]
                     if area >= max_area:
-                        if curr_distance <= speed/30 or speed/30 == 0.0 or nn>3:
+                        # 1.5 考慮球揮拍後速度差太多
+                        # 之後修改成在玩家附近就不要考慮速度的推算
+                        if curr_distance <= speed/30 * 1.5 or speed/30 == 0.0 or nn>1:
                             nn = 0
                             last_coordinate = [rects[i][0], rects[i][1]]
                             curr_distance = distance
@@ -212,6 +214,7 @@ for id in range(4, 801):
                 frame_num_t = 1
             else:
                 frame_num_t+=1
+                
                 q.appendleft(None)
                 q.pop()
 
@@ -220,7 +223,7 @@ for id in range(4, 801):
 
 
             if len(pos_3) >= 3:
-
+                
                 speed = getSpeed([pos_3[0][0], pos_3[0][1]], [pos_3[1][0], pos_3[1][1]],frame_num)[0]
                 vec = getVector([pos_3[0][0], pos_3[0][1]], [pos_3[1][0], pos_3[1][1]])
                 cv2.putText(
@@ -233,7 +236,16 @@ for id in range(4, 801):
                     1,
                     cv2.LINE_AA,
                 )
-
+                cv2.putText(
+                    image_cp,
+                    "frame_num: " + str(frame_num),
+                    (10, 100),
+                    cv2.FONT_HERSHEY_TRIPLEX,
+                    1,
+                    (0, 255, 255),
+                    1,
+                    cv2.LINE_AA,
+                )
                 cv2.putText(
                     image_cp,
                     "Speed: " + str(speed/30),
@@ -261,10 +273,10 @@ for id in range(4, 801):
                     del draw
             opencvImage = cv2.cvtColor(np.array(PIL_image), cv2.COLOR_RGB2BGR)
             if x != 0 and y != 0:
-                
                 if np.amax(h_pred[i]) > 0:
+                    power = abs(speed/30)
                     cv2.circle(opencvImage, (x, y), 5, color, www)
-                    power = abs(speed/20 if speed/20 <= 120 else 120)
+                    cv2.circle(opencvImage, (x, y), int(power), (255,255,100), 1)
                     cv2.line(opencvImage, (x, y), (int(x + vec[0]*-power),int( y + vec[1]*-power)), (100, 50, 230), 3)
 
             cv2.imshow("frame", opencvImage)
