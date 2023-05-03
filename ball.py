@@ -15,17 +15,7 @@ WIDTH=512
 mag=1
 
 
-def filterLines(segments, minLength, maxLength): 
-    result = []
-    for segment in segments: 
-        for x1,y1,x2,y2 in segment:  
-            if  minLength < math.dist([x1,y1] , [x2,y2]) < maxLength: 
-                # For Brute Testing
-#                 print(x1,y1, '\t', x2,y2, '\t', math.dist([x1,y1] , [x2,y2]))
-                result.append(segment) 
-   
-#     print('------------------------------')
-    return result 
+
     
 def custom_loss(y_true, y_pred):
 	loss = (-1)*(K.square(1 - y_pred) * y_true * K.log(K.clip(y_pred, K.epsilon(), 1)) + K.square(y_pred) * (1 - y_true) * K.log(K.clip(1 - y_pred, K.epsilon(), 1)))
@@ -96,16 +86,16 @@ for id in range(1, 801):
 	dilated = cv2.dilate(edges, np.ones((2,2), dtype=np.uint8))
 	lines = cv2.HoughLinesP(dilated, rho=1, theta=np.pi/180, threshold=50, minLineLength=50, maxLineGap=10)
 	h_lines, v_lines = segment_lines(lines, 280, 0.5) 
-	filtered_h_lines, filtered_v_lines = getCourtLines(filterLines(h_lines,350, 900), filterLines(v_lines,430, 510))
+	# filtered_h_lines, filtered_v_lines = getCourtLines(filterLines(h_lines,350, 900), filterLines(v_lines,430, 510))
  
-	for i in range(len(filtered_v_lines)): 
-		l = filtered_v_lines[i][0] 
-		cv2.line(court, (l[0], l[1]), (l[2], l[3]), (0,0,255), 3, cv2.LINE_AA)  
+	# for i in range(len(filtered_v_lines)): 
+	# 	l = filtered_v_lines[i][0] 
+	# 	cv2.line(court, (l[0], l[1]), (l[2], l[3]), (0,0,255), 3, cv2.LINE_AA)  
 		
-	# Drawing Horizontal Hough Lines on image 
-	for i in range(len(filtered_h_lines)): 
-		l = filtered_h_lines[i][0] 
-		cv2.line(court, (l[0], l[1]), (l[2], l[3]), (0,0,255), 3, cv2.LINE_AA)  
+	# # Drawing Horizontal Hough Lines on image 
+	# for i in range(len(filtered_h_lines)): 
+	# 	l = filtered_h_lines[i][0] 
+	# 	cv2.line(court, (l[0], l[1]), (l[2], l[3]), (0,0,255), 3, cv2.LINE_AA)  
 	cv2.imshow('court', court)
 	# 
 	if not ret:
