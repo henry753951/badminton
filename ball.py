@@ -59,10 +59,10 @@ def getCourtLines(hsegments, vsegments):
     return h_result, v_result
 
 
-def getSpeed(pos1: list, pos2: list):
+def getSpeed(pos1: list, pos2: list,frame_num : int):
     x1, y1 = pos1
     x2, y2 = pos2
-    return math.sqrt(pow((y2 - y1),2)+pow((x2 - x1),2))/(1/30),(y2 - y1)/(1/30),(x2 - x1)/(1/30)
+    return math.sqrt(pow((y2 - y1),2)+pow((x2 - x1),2))*30/frame_num,(y2 - y1)*30/frame_num,(x2 - x1)*30/frame_num
 
 def getVector(pos1: list, pos2: list):
     vec_AB = (pos2[0] - pos1[0], pos2[1] - pos1[1])
@@ -103,7 +103,7 @@ for id in range(1, 801):
     ret, image2 = cap.read()
     ret, image3 = cap.read()
     cap.set(1, currentFrame)
-
+    last_coordinate = [0,0]
     # 球場
 
     court = np.zeros_like(image1)
@@ -147,7 +147,14 @@ for id in range(1, 801):
         if not ret:
             break
         # 球位置
+        frame_num = 1
+        frame_num_t=1
         for i in range(3):
+            color = (100, 255, 200)
+            www = 2
+            vec = [0, 0]
+            speed = 0
+
             cc_frame = current_frame - 3 + i
             x, y = 0, 0
             if i == 0:
@@ -166,46 +173,42 @@ for id in range(1, 801):
                     h_pred[i].copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
                 )
                 rects = [cv2.boundingRect(ctr) for ctr in cnts]
-                max_area_idx = 0
-                max_area = rects[max_area_idx][2] * rects[max_area_idx][3]
+                distance = int(math.sqrt(pow(rects[0][0]-last_coordinate[0],2)+pow(rects[0][1]-last_coordinate[1],2)))
+                # print(rects)
                 for i in range(len(rects)):
-                    area = rects[i][2] * rects[i][3]
-                    if area > max_area:
+                    curr_distance = int(math.sqrt(pow(rects[i][0]-last_coordinate[0],2)+pow(rects[i][1]-last_coordinate[1],2)))
+                    if curr_distance <= distance:
+                        last_coordinate = [rects[i][0], rects[i][1]]
+                        curr_distance = distance
                         max_area_idx = i
-                        max_area = area
+                
                 target = rects[max_area_idx]
+                # print(target)
                 x, y = (
                     int(ratio * (target[0] + target[2] / 2)),
                     int(ratio * (target[1] + target[3] / 2)),
                 )
 
             # 路徑
-
+            
             if x != 0 and y != 0:
                 q.appendleft([x, y])
                 pos_3.appendleft([x, y])
                 q.pop()
+                frame_num = frame_num_t
+                frame_num_t = 1
             else:
+                frame_num_t+=1
                 q.appendleft(None)
                 q.pop()
 
-            
+ 
             
 
-            color = (100, 255, 200)
-            www = 2
-            vec = [0, 0]
-            speed = 0
-            speedDeltaX = 1
-            speedDeltaY = 1
+
             if len(pos_3) >= 3:
-                speed = getSpeed([pos_3[0][0], pos_3[0][1]], [pos_3[1][0], pos_3[1][1]])[0]
-                speedDeltaX = getSpeed([pos_3[0][0], pos_3[0][1]], [pos_3[1][0], pos_3[1][1]])[1] - getSpeed([pos_3[1][0], pos_3[1][1]], [pos_3[2][0], pos_3[2][1]])[1]
-                speedDeltaY = getSpeed([pos_3[0][0], pos_3[0][1]], [pos_3[1][0], pos_3[1][1]])[2] - getSpeed([pos_3[1][0], pos_3[1][1]], [pos_3[2][0], pos_3[2][1]])[2]
-                speedDeltaX = abs(speedDeltaX)
-                speedDeltaY = abs(speedDeltaY)
 
-
+                speed = getSpeed([pos_3[0][0], pos_3[0][1]], [pos_3[1][0], pos_3[1][1]],frame_num)[0]
                 vec = getVector([pos_3[0][0], pos_3[0][1]], [pos_3[1][0], pos_3[1][1]])
                 cv2.putText(
                     image_cp,
@@ -217,26 +220,7 @@ for id in range(1, 801):
                     1,
                     cv2.LINE_AA,
                 )
-                cv2.putText(
-                    image_cp,
-                    "deltaX: " + str(speedDeltaX),
-                    (10, 150),
-                    cv2.FONT_HERSHEY_TRIPLEX,
-                    1,
-                    (0, 255, 255),
-                    1,
-                    cv2.LINE_AA,
-                )
-                cv2.putText(
-                    image_cp,
-                    "deltaY: " + str(speedDeltaY),
-                    (10, 200),
-                    cv2.FONT_HERSHEY_TRIPLEX,
-                    1,
-                    (0, 255, 255),
-                    1,
-                    cv2.LINE_AA,
-                )
+
                 cv2.putText(
                     image_cp,
                     "Speed: " + str(speed),
@@ -249,12 +233,6 @@ for id in range(1, 801):
                 )
                 if len(pos_3) > 3:
                     pos_3.pop()
-                if speedDeltaX > 1000:
-                    color = (0, 0, 255)
-                    www = 8
-                if speedDeltaY > 1000:
-                    color = (0, 0, 255)
-                    www = 8
 
 
 
@@ -276,9 +254,8 @@ for id in range(1, 801):
 
             cv2.imshow("frame", opencvImage)
             cv2.waitKey(10)
-
         ret, image1 = cap.read()
-        
+
         ret, image2 = cap.read()
         ret, image3 = cap.read()
     print("finish")
