@@ -69,29 +69,28 @@ for id in range(1, 801):
         line_groups = {'h': {}, 'v': {}}
         for line in lines:
             x1, y1, x2, y2 = line[0]
-            k = (y2 - y1) / (x2 - x1)  # 斜率
-            b = y1 - k*x1  # 截距
-            if abs(k) < 0.5:  # 水平线
+            k = (y2 - y1) / (x2 - x1) 
+            b = y1 - k*x1 
+            if abs(k) < 0.5: 
                 if k not in line_groups['h']:
                     line_groups['h'][k] = []
                 line_groups['h'][k].append((x1, y1, x2, y2, b))
-            elif abs(k) > 5:  # 垂直线
+            elif abs(k) > 5: 
                 if x1 not in line_groups['v']:
                     line_groups['v'][x1] = []
                 line_groups['v'][x1].append((x1, y1, x2, y2, b))
 
-        # 对每个水平线分组中的直线进行连接
         connected_lines = {'h': [], 'v': []}
         for k, lines in line_groups['h'].items():
-            lines = sorted(lines, key=lambda x: x[4])  # 根据截距排序
+            lines = sorted(lines, key=lambda x: x[4]) 
             connected = []
             for line in lines:
                 if len(connected) == 0:
                     connected.append(line)
                 else:
                     last_line = connected[-1]
-                    if abs(line[1] - last_line[1]) < 10:  # 判断是否在同一水平线上
-                        if line[0] > last_line[2]:  # 判断是否相邻
+                    if abs(line[1] - last_line[1]) < 10:
+                        if line[0] > last_line[2]: 
                             connected.append(line)
                         else:
                             connected[-1] = (last_line[0], last_line[1], line[2], line[3], last_line[4])
@@ -100,17 +99,16 @@ for id in range(1, 801):
                         connected = [line]
             connected_lines['h'].extend(connected)
 
-        # 对每个垂直线分组中的直线进行连接
         for x, lines in line_groups['v'].items():
-            lines = sorted(lines, key=lambda x: x[4])  # 根据截距排序
+            lines = sorted(lines, key=lambda x: x[4])
             connected = []
             for line in lines:
                 if len(connected) == 0:
                     connected.append(line)
                 else:
                     last_line = connected[-1]
-                    if abs(line[0] - last_line[0]) < 10:  # 判断是否在同一垂直线上
-                        if line[1] > last_line[3]:  # 判断是否相邻
+                    if abs(line[0] - last_line[0]) < 10: 
+                        if line[1] > last_line[3]: 
                             connected.append(line)
                         else:
                             connected[-1] = (line[0], last_line[1], line[2], last_line[3], last_line[4])
