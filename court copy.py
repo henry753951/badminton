@@ -27,7 +27,7 @@ for id in range(1, 801):
     bestSE = 400,400
     cap = cv2.VideoCapture(video_filename)
 
-    # 建立背景差分器
+
 
     ret, frame = cap.read()
     if ret:
@@ -66,8 +66,6 @@ for id in range(1, 801):
 
         court = np.zeros_like(thresh)
         court_ = np.zeros_like(thresh)
-        for l in h_linesP:
-            cv2.line(court_, (l[0], l[1]), (l[2], l[3]), (255, 255, 255), 3, cv2.LINE_AA)
 
         # Drawing Horizontal Hough Lines on image
         for i in range(len(v_lines)):
@@ -78,7 +76,17 @@ for id in range(1, 801):
         for i in range(len(h_lines)):
             l = h_lines[i][0]
             cv2.line(court, (l[0], l[1]), (l[2], l[3]), (255, 255, 255), 3, cv2.LINE_AA)
+        cv2.imshow("court", court)
+        contours, _ = cv2.findContours(court, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
+        contours = list(contours)
+        # 根據輪廓面積大小進行sort
+        contours.sort(key = cv2.contourArea , reverse=True)
+        # 畫出前20的輪廓
+        cv2.drawContours(court_, contours[0:15], -1, (255,0,255), 4)
+
+        # 每幀全部 -3
+        cv2.subtract(court_,(3,3,3,0) , court_)
 
 
         # cv2.imshow('00', mask)

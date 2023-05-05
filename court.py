@@ -31,40 +31,42 @@ for id in range(1, 801):
 
     ret, frame = cap.read()
     if ret:
-        ycrcb = cv2.cvtColor(frame, cv2.COLOR_BGR2YCrCb)
-        # hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        # hsv_inrange = cv2.inRange(hsv, (0, 0, 50), (255, 80, 255))
-        cv2.imshow('gray', frame)
-        white_mask = np.zeros_like(frame)
-        t1=6
-        t2=10
-        sl=128
-        sd=20
-        for x in range(t2, 1280-t2):
-            for y in range(t2, 720-t2):
-                isWhite = False
-                here = ycrcb[y][x][0]
-                if here > sl:
-                    for t in range(t1, t2+1):
-                        isWhite |= (here - ycrcb[y][x-t][0]>sd) and (here - ycrcb[y][x+t][0]>sd)
-                        isWhite |= (here - ycrcb[y-t][x][0]>sd) and (here - ycrcb[y+t][x][0]>sd)
-                if isWhite:
-                    white_mask[y][x] = 255
-        cv2.imshow('white_mask', white_mask)
-
+        contrast = 30
+        brightness = 20
+        frame = frame * (contrast/127 + 1) - contrast + brightness # 轉換公式
+        frame = np.clip(frame, 0, 255)
+        frame = np.uint8(frame)
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+        border = np.zeros_like(gray)
+ 
         
-        edges = cv2.Canny(thresh, 100, 150)
+        edges = cv2.Canny(gray, 100, 150)
+        dilated = cv2.dilate(edges, np.ones((2, 2), dtype=np.uint8))
         
-        
+        contours, _ = cv2.findContours(dilated, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        contours = list(contours)
+        # 根據輪廓面積大小進行sort
+        contours.sort(key = cv2.contourArea , reverse=True)
+        # 畫出前20的輪廓
+        cv2.drawContours(border, contours[0:10], -1, (255,255,255), 10)
+
+
+        c = max(contours, key = cv2.contourArea)
+        # 找凸包
+        hull = cv2.convexHull(c)
+        epsilon = 0.01*cv2.arcLength(hull,True)
+        approx = cv2.approxPolyDP(hull,epsilon,True)
+
+        cv2.drawContours(clean_border, [approx], -1, (0,255,255), 2)
         lines = cv2.HoughLinesP(
-                edges, rho=1, theta=np.pi / 180, threshold=50, minLineLength=50, maxLineGap=10
+                border, rho=1, theta=np.pi / 180, threshold=50, minLineLength=50, maxLineGap=10
         )
 
 
-
         h_lines, v_lines = segment_lines(lines, 280, 0.5)
+
+
         court = np.zeros_like(frame)
         line_groups = {'h': {}, 'v': {}}
         for line in lines:
@@ -89,7 +91,7 @@ for id in range(1, 801):
                     connected.append(line)
                 else:
                     last_line = connected[-1]
-                    if abs(line[1] - last_line[1]) < 10:
+                    if abs(line[1] - last_line[1]) < 5:
                         if line[0] > last_line[2]: 
                             connected.append(line)
                         else:
@@ -99,24 +101,24 @@ for id in range(1, 801):
                         connected = [line]
             connected_lines['h'].extend(connected)
 
-        for x, lines in line_groups['v'].items():
-            lines = sorted(lines, key=lambda x: x[4])
-            connected = []
-            for line in lines:
-                if len(connected) == 0:
-                    connected.append(line)
-                else:
-                    last_line = connected[-1]
-                    if abs(line[0] - last_line[0]) < 10: 
-                        if line[1] > last_line[3]: 
-                            connected.append(line)
-                        else:
-                            connected[-1] = (line[0], last_line[1], line[2], last_line[3], last_line[4])
-                    else:
-                        connected_lines['v'].extend(connected)
-                        connected = [line]
-            connected_lines['v'].extend(connected)
-
+        #for x, lines in line_groups['v'].items():
+        #    lines = sorted(lines, key=lambda x: x[4])
+        #    connected = []
+        #    for line in lines:
+        #        if len(connected) == 0:
+        #            connected.append(line)
+        #        else:
+        #            last_line = connected[-1]
+        #            if abs(line[0] - last_line[0]) < 50: 
+        #                if line[1] > last_line[3]: 
+        #                    connected.append(line)
+        #                else:
+        #                    connected[-1] = (line[0], last_line[1], line[2], last_line[3], last_line[4])
+        #            else:
+        #                connected_lines['v'].extend(connected)
+        #                connected = [line]
+        #    connected_lines['v'].extend(connected)
+        # v_lines = connected_lines['v']
         h_lines = connected_lines['h']
 
         # Drawing Horizontal Hough Lines on image
