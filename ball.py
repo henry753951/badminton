@@ -74,7 +74,7 @@ def getVector(pos1: list, pos2: list):
     return unit_vec_AB
 
 # 1 to 800
-for id in range(3, 801):
+for id in range(44, 801):
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(F'{id}.mp4', fourcc, 30.0, (1280 ,720))
     # n = 0
