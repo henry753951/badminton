@@ -75,6 +75,8 @@ def getVector(pos1: list, pos2: list):
 
 # 1 to 800
 for id in range(3, 801):
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    out = cv2.VideoWriter(F'{id}.mp4', fourcc, 30.0, (1280 ,720))
     # n = 0
     id = str(id).zfill(5)
     video_filename = f"../train/{id}/{id}.mp4"
@@ -139,6 +141,7 @@ for id in range(3, 801):
             if not ret:
                 break
             cv2.imshow("frame", img)
+            out.write(img)
             continue
 
         ret, img = cap.read()
@@ -147,7 +150,7 @@ for id in range(3, 801):
         if not ret:
             break
         # 球位置
-        frame_num = 1
+
         frame_num_t=1
         color = (100, 255, 200)
         www = 2
@@ -185,6 +188,8 @@ for id in range(3, 801):
                     if area >= max_area:
                         # 1.5 考慮球揮拍後速度差太多
                         # 之後修改成在玩家附近就不要考慮速度的推算
+                        # 還有會吃到其他場地的球
+                        # 之後修改成距離算法
                         if curr_distance <= speed/30 * 1.5 or speed/30 == 0.0 or nn>1:
                             nn = 0
                             last_coordinate = [rects[i][0], rects[i][1]]
@@ -210,7 +215,6 @@ for id in range(3, 801):
                 q.appendleft([x, y])
                 pos_3.appendleft([x, y])
                 q.pop()
-                frame_num = frame_num_t
                 frame_num_t = 1
             else:
                 frame_num_t+=1
@@ -224,7 +228,7 @@ for id in range(3, 801):
 
             if len(pos_3) >= 3:
                 
-                speed = getSpeed([pos_3[0][0], pos_3[0][1]], [pos_3[1][0], pos_3[1][1]],frame_num)[0]
+                speed = getSpeed([pos_3[0][0], pos_3[0][1]], [pos_3[1][0], pos_3[1][1]],frame_num_t)[0]
                 vec = getVector([pos_3[0][0], pos_3[0][1]], [pos_3[1][0], pos_3[1][1]])
                 cv2.putText(
                     image_cp,
@@ -238,7 +242,7 @@ for id in range(3, 801):
                 )
                 cv2.putText(
                     image_cp,
-                    "frame_num: " + str(frame_num),
+                    "frame_num: " + str(frame_num_t),
                     (10, 100),
                     cv2.FONT_HERSHEY_TRIPLEX,
                     1,
@@ -280,9 +284,12 @@ for id in range(3, 801):
                     cv2.line(opencvImage, (x, y), (int(x + vec[0]*-power),int( y + vec[1]*-power)), (100, 50, 230), 3)
 
             cv2.imshow("frame", opencvImage)
+            out.write(opencvImage)
             cv2.waitKey(10)
         ret, image1 = cap.read()
 
         ret, image2 = cap.read()
         ret, image3 = cap.read()
     print("finish")
+    cap.release()
+    out.release()
