@@ -37,10 +37,10 @@ for id in range(1, 801):
         frame = frame * (contrast/127 + 1) - contrast + brightness # 轉換公式
         frame = np.clip(frame, 0, 255)
         frame = np.uint8(frame)
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        hsv_inrange = cv2.inRange(hsv, (0, 0, 50), (255, 80, 255))
+        blur = cv2.GaussianBlur(frame, (5, 5), 0)
+        usm = cv2.addWeighted(frame, 1.5, blur, -0.5, 0)
         
-        thresh = cv2.threshold(hsv_inrange, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+        thresh = cv2.threshold(usm, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
         edges = cv2.Canny(thresh, 100, 150)
         dilated = cv2.dilate(edges, np.ones((2, 2), dtype=np.uint8))
         
