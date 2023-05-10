@@ -17,7 +17,7 @@ currentFrame = 0
 
 
 
-for id in range(187, 801):
+for id in range(224, 801):
     id = str(id).zfill(5)
     video_filename = F'../train/{id}/{id}.mp4'
     video = cv2.VideoCapture(video_filename)
@@ -87,8 +87,13 @@ for id in range(187, 801):
     mask = np.stack((mask,mask,mask), 2)
     m_lines = []
 
-    test = image.copy()
 
+    # test
+    test = image.copy()
+    for x1,y1,x2,y2 in lines.reshape(-1,4):
+        cv2.line(test, (x1,y1), (x2,y2), (0,255,0), 2)
+    cv2.imshow('test', test)
+    cv2.imshow('edge', edges)
 
 
     # filter out lines
@@ -102,6 +107,8 @@ for id in range(187, 801):
             m_lines.append(line)
             
     print(len(m_lines), 'Lines')
+
+
 
     _h, _w, _ = image.shape
     e_m_lines = []
@@ -153,7 +160,7 @@ for id in range(187, 801):
             if distance_each_line[i + 1]/distance > xxScale:
                 f = i
                 break
-    court_points = []
+
     horizontal_lines = horizontal_lines[f:f+3]
 
     temp = []
@@ -166,12 +173,12 @@ for id in range(187, 801):
         for i in range(int(1080/2) + 100):
             rx = center+i
             lx = center-i
-            cv2.circle(image, (rx,cy), 5, (0,255,0), -1)
-            cv2.circle(image, (lx,cy), 5, (0,255,0), -1)
-            cv2.imshow("123",image)
-            cv2.waitKey(1)
+            # cv2.circle(image, (rx,cy), 5, (0,255,0), -1)
+            # cv2.circle(image, (lx,cy), 5, (0,255,0), -1)
+            # cv2.imshow("123",image)
+            # cv2.waitKey(1)
             for line in vertical_lines:
-                if(abs(line[0]-line[2]) < 80):
+                if(abs(line[0]-line[2]) < 60):
                     center_line = line
                 if (utils.distance_to_line(line,rx,cy) <=1 or utils.distance_to_line(line,lx,cy)<=1) and abs(line[0]-line[2]) > 100:
                     if temp.count(line) == 0:
@@ -182,13 +189,16 @@ for id in range(187, 801):
                 continue
             break
         vertical_lines = temp
-        if center_line != None:
-            vertical_lines.append(center_line)
+
 
 
 
     temp1 = []
     temp2 = []
+    court_points = {
+        "corner":[],
+        "center":[],
+    }
     for line in horizontal_lines:
         x1,y1,x2,y2 = line
         cv2.line(image,(x1,y1),(x2,y2),(0,0,255),3)
@@ -197,25 +207,36 @@ for id in range(187, 801):
             # check x,y in range 
             height_, width_, _ = image.shape
             if x >= 0 and x < width_ and y >= 0 and y < height_:
-                court_points.append([x,y])
+                court_points["corner"].append([x,y])
                 if temp1.count(line) == 0:
                     temp1.append(line)
                 if temp2.count(line2) == 0:
                     temp2.append(line2)
-                cv2.circle(image, (int(x),int(y)), 5, (0,255,0), -1)
+                cv2.circle(image, (int(x),int(y)), 5, (0,255,0), 5)
     horizontal_lines = temp1
     vertical_lines = temp2
 
 
+    if center_line != None:
+        l = 0
+        r = 0
+        for p in court_points["corner"]:
+            x,y = p
+            if center_line[0] > x:
+                l += 1
+            elif center_line[0] < x:
+                r += 1
+        if l==6 and r==6:
+            for line in horizontal_lines:
+                x,y = utils.find_intersection(center_line, line)
+                court_points["center"].append([x,y])
+                cv2.line(image,(center_line[0],center_line[1]),(center_line[2],center_line[3]),(250,150,250),2)
 
 
-
-    if len(court_points)==15:
-        cv2.putText(image, ": ))", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (200, 255, 255), 2, cv2.LINE_AA)
-    elif len(court_points)==12:
+    if len(court_points["corner"])==12:
         cv2.putText(image, ": )", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (200, 255, 255), 2, cv2.LINE_AA)
-    else:
-        cv2.putText(image, ": (", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (200, 255, 255), 2, cv2.LINE_AA)
+    # else:
+    #     cv2.putText(image, ": (", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (200, 255, 255), 2, cv2.LINE_AA)
 
 
 
