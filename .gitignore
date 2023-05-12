@@ -1,2 +1,4 @@
 trajectory_model
 *.mp4
+TrackNetV2
+*.pt
