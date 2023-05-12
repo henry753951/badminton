@@ -88,7 +88,7 @@ model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
 
 # 1 to 800
-for id in range(1, 801):
+for id in range(3, 801):
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(F'new-{id}.mp4', fourcc, 30.0, (1280 ,720))
     # n = 0
@@ -145,7 +145,8 @@ for id in range(1, 801):
         continue
     ratio = image1.shape[0] / HEIGHT
     size = (int(WIDTH * ratio), int(HEIGHT * ratio))
-
+    speed = 0
+    nn = 0
     while ret:
         current_frame = int(cap.get(cv2.CAP_PROP_POS_FRAMES))
         if current_frame < 3:
@@ -167,8 +168,7 @@ for id in range(1, 801):
         color = (100, 255, 200)
         www = 2
         vec = [0, 0]
-        speed = 0
-        nn = 0
+
         for i in range(3):
             cc_frame = current_frame - 3 + i
             x, y = 0, 0
@@ -193,19 +193,27 @@ for id in range(1, 801):
                 curr_distance = None
                 max_area_idx = -1
                 max_area = rects[0][2] * rects[0][3]
+
+                # sort by distance
+                
+                test = np.zeros_like(image)
+                cv2.drawContours(test, cnts, -1, (0, 255, 0), 3)
+                cv2.imshow("test", test)
+                cv2.circle(image_cp, (int(ratio *last_coordinate[0]),int( ratio *last_coordinate[1])), 5, (255, 255, 255), -1)
                 for i in range(len(rects)):
+                    
                     curr_distance = int(math.sqrt(pow(rects[i][0]-last_coordinate[0],2)+pow(rects[i][1]-last_coordinate[1],2)))
                     area = rects[i][2] * rects[i][3]
                     if area >= max_area:
-                        # 1.5 考慮球揮拍後速度差太多
-                        # 之後修改成在玩家附近就不要考慮速度的推算
-                        # 還有會吃到其他場地的球
-                        # 之後修改成距離算法
-                        if curr_distance <= speed/30 * 1.5 or speed/30 == 0.0 or nn>1:
+                        if curr_distance <= speed/30 *1.5 or speed/30 < 5.0 or nn>2:
+                            if nn > 3:
+                                rects = sorted(rects, key=lambda x: math.sqrt(pow(x[0]-last_coordinate[0],2)+pow(x[1]-last_coordinate[1],2)))
+                                i = 0
                             nn = 0
                             last_coordinate = [rects[i][0], rects[i][1]]
                             curr_distance = distance
                             max_area_idx = i
+                print(F" {curr_distance}  {str(speed/30)}" )
                 if max_area_idx == -1:
                     x, y = (
                         0,
