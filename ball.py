@@ -6,27 +6,28 @@ from PIL import Image, ImageDraw
 import csv
 import sys
 import models.trajectory
-from keras.models import *
-import keras.backend as K
+# from keras.models import *
+# import keras.backend as K
 import math
-import tensorflow as tf
+# import tensorflow as tf
 import matplotlib.pyplot as plt
-
+import torch
+from torch.utils.data import DataLoader
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-tf.keras.utils.disable_interactive_logging()
+# tf.keras.utils.disable_interactive_logging()
 BATCH_SIZE = 1
 HEIGHT = 288
 WIDTH = 512
 mag = 1
 
 
-def custom_loss(y_true, y_pred):
-    loss = (-1) * (
-        K.square(1 - y_pred) * y_true * K.log(K.clip(y_pred, K.epsilon(), 1))
-        + K.square(y_pred) * (1 - y_true) * K.log(K.clip(1 - y_pred, K.epsilon(), 1))
-    )
-    return K.mean(loss)
+# def custom_loss(y_true, y_pred):
+#     loss = (-1) * (
+#         K.square(1 - y_pred) * y_true * K.log(K.clip(y_pred, K.epsilon(), 1))
+#         + K.square(y_pred) * (1 - y_true) * K.log(K.clip(1 - y_pred, K.epsilon(), 1))
+#     )
+#     return K.mean(loss)
 
 
 def segment_lines(lines, deltaX, deltaY):
@@ -75,10 +76,21 @@ def getVector(pos1: list, pos2: list):
         unit_vec_AB = (vec_AB[0] / vec_AB_len, vec_AB[1] / vec_AB_len)
     return unit_vec_AB
 
+
+
+checkpoint = torch.load("model_best.pt")
+param_dict = checkpoint['param_dict']
+model_name = param_dict['model_name']
+num_frame = param_dict['num_frame']
+input_type = param_dict['input_type']
+model = models.trajectory.get_model(model_name, num_frame, input_type).cuda()
+model.load_state_dict(checkpoint['model_state_dict'])
+model.eval()
+
 # 1 to 800
-for id in range(51, 801):
+for id in range(1, 801):
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(F'{id}.mp4', fourcc, 30.0, (1280 ,720))
+    out = cv2.VideoWriter(F'new-{id}.mp4', fourcc, 30.0, (1280 ,720))
     # n = 0
     id = str(id).zfill(5)
     video_filename = f"../train/{id}/{id}.mp4"
@@ -91,9 +103,7 @@ for id in range(51, 801):
     pos_3 = queue.deque()
 
 
-    # load model
-    trajectory_model = load_model("trajectory_model", custom_objects={"custom_loss": custom_loss})
-    # trajectory_model.summary()
+
     try:
         os.mkdir(f"dataset/{id}")
     except:
@@ -160,8 +170,6 @@ for id in range(51, 801):
         speed = 0
         nn = 0
         for i in range(3):
-
-
             cc_frame = current_frame - 3 + i
             x, y = 0, 0
             if i == 0:
@@ -172,7 +180,8 @@ for id in range(51, 801):
                 image = image3
 
             image_cp = np.copy(image)
-            h_pred = models.trajectory.predict(trajectory_model, image1, image2, image3)
+            h_pred = models.trajectory.predict(model, [image1, image2, image3],3)
+            
             if np.amax(h_pred[i]) <= 0:
                 pass
             else:
@@ -279,7 +288,7 @@ for id in range(51, 801):
                     del draw
             opencvImage = cv2.cvtColor(np.array(PIL_image), cv2.COLOR_RGB2BGR)
             if x != 0 and y != 0:
-                if np.amax(h_pred[i]) > 0:
+                if i < len(h_pred) and np.amax(h_pred[i]) > 0:
                     power = abs(speed/30)
                     cv2.circle(opencvImage, (x, y), 5, color, www)
                     cv2.circle(opencvImage, (x, y), int(power), (255,255,100), 1)
@@ -287,11 +296,10 @@ for id in range(51, 801):
 
             cv2.imshow("frame", opencvImage)
             out.write(opencvImage)
-            cv2.waitKey(10)
+            cv2.waitKey(1)
         ret, image1 = cap.read()
-
         ret, image2 = cap.read()
         ret, image3 = cap.read()
     print("finish")
     cap.release()
-    out.release()
+    # out.release()
