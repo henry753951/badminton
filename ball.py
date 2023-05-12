@@ -103,7 +103,6 @@ for id in range(3, 801):
     pos_3 = queue.deque()
 
 
-
     try:
         os.mkdir(f"dataset/{id}")
     except:
