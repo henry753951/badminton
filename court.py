@@ -173,10 +173,10 @@ for id in range(224, 801):
         for i in range(int(1080/2) + 100):
             rx = center+i
             lx = center-i
-            # cv2.circle(image, (rx,cy), 5, (0,255,0), -1)
-            # cv2.circle(image, (lx,cy), 5, (0,255,0), -1)
-            # cv2.imshow("123",image)
-            # cv2.waitKey(1)
+            cv2.circle(image, (rx,cy), 5, (0,255,0), -1)
+            cv2.circle(image, (lx,cy), 5, (0,255,0), -1)
+            cv2.imshow("123",image)
+            cv2.waitKey(1)
             for line in vertical_lines:
                 if(abs(line[0]-line[2]) < 60):
                     center_line = line
