@@ -25,9 +25,6 @@ def get_court(frame,showWindow=False):
     @input: frame
     @return [p[0],p[1],......p[23]],(c1,c2)
     '''
-    if not frame:
-        print(F"Cannot read video file {id}")
-        return
 
     corner = utils.getPerspectiveTransformMatrix(frame,  show_frame = False)
     easy_court = True
