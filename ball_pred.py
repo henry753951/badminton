@@ -21,8 +21,8 @@ BATCH_SIZE = 1
 HEIGHT = 288
 WIDTH = 512
 mag = 1
-dataset_dir = "ball_dataset"
-
+dataset_dir = "dataset"
+outVideo = False
 # def custom_loss(y_true, y_pred):
 #     loss = (-1) * (
 #         K.square(1 - y_pred) * y_true * K.log(K.clip(y_pred, K.epsilon(), 1))
@@ -90,14 +90,16 @@ model.eval()
 
 # 1 to 800
 for id in range(1, 801):
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(F'new-{id}.mp4', fourcc, 30.0, (1280 ,720))
+    if outVideo :
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        out = cv2.VideoWriter(F'new-{id}.mp4', fourcc, 30.0, (1280 ,720))
+
     # n = 0
     id = str(id).zfill(5)
     video_filename = f"train/{id}/{id}.mp4"
     start_frame = 0
     currentFrame = 0
-    df = pd.DataFrame(columns=["Frame", "x", "y","speed","vec x","vec y"])
+    df = pd.DataFrame(columns=["Frame","Visibility", "X", "Y","speed","vec x","vec y"])
 
     q = queue.deque()
     for i in range(0, 8):
@@ -250,7 +252,9 @@ for id in range(1, 801):
                 
                 speed = getSpeed([pos_3[0][0], pos_3[0][1]], [pos_3[1][0], pos_3[1][1]],frame_num_t)[0]
                 vec = getVector([pos_3[0][0], pos_3[0][1]], [pos_3[1][0], pos_3[1][1]])
-                df.loc[len(df)] = (int(cc_frame), int(x), int(y) , speed/30, vec[0], vec[1])
+                
+                df.loc[len(df)] = (str(int(cc_frame)),0 if int(x) ==0 and int(y)==0 else 1, int(x), int(y) , speed/30, vec[0], vec[1])
+                
                 cv2.putText(
                     image_cp,
                     "vec: " + str(vec),
@@ -305,12 +309,14 @@ for id in range(1, 801):
                     cv2.line(opencvImage, (x, y), (int(x + vec[0]*-power),int( y + vec[1]*-power)), (100, 50, 230), 3)
 
             cv2.imshow("frame", opencvImage)
-            out.write(opencvImage)
+            if outVideo :
+                out.write(opencvImage)
             cv2.waitKey(1)
         ret, image1 = cap.read()
         ret, image2 = cap.read()
         ret, image3 = cap.read()
     print("finish")
-    df.to_csv(F"{dataset_dir}/{id}/dataset.csv", index=False)
+    df.to_csv(F"{dataset_dir}/{id}/ball_pred.csv", index=False)
     cap.release()
-    out.release()
+    if outVideo :
+     out.release()

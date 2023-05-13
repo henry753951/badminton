@@ -20,9 +20,10 @@ def get_court(frame,showWindow=False):
     '''
     輸出點順序，由橫線從下面到上面，每四點四點
     四個點中，點從左到右
-
+    c1 [x1,y1]
+    c2 [x2,y2]
     @input: frame
-    @return [p[0],p[1],......p[23]]
+    @return [p[0],p[1],......p[23]],(c1,c2)
     '''
     if not frame:
         print(F"Cannot read video file {id}")
@@ -304,6 +305,8 @@ def get_court(frame,showWindow=False):
     final_point.append(get_position(236-18,0,matrix,True))
     final_point.append(get_position(236,0,matrix,True))
 
+    c1 = get_position(0,335,matrix,True)
+    c2 = get_position(236,335,matrix,True)
 
     if showWindow:
         for p in final_point:
@@ -312,4 +315,4 @@ def get_court(frame,showWindow=False):
         cv2.imshow("court Perspective",imgOutput)
         cv2.waitKey(10)
 
-    return final_point
+    return final_point,(c1,c2)

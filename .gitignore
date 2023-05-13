@@ -5,3 +5,4 @@ TrackNetV2
 train
 val
 ball_dataset/*
+dataset/*/*

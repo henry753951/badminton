@@ -550,6 +550,5 @@ def smooth(path):
 
 rootdir = os.getcwd()
 
-for i in os.listdir(os.path.join(rootdir, 'predict')):
-    if i[-4:]=='.csv':
-        smooth(os.path.join(rootdir, 'predict', i))
+if __name__ == '__main__':
+    smooth(os.path.join(rootdir, 'dataset', "00001","ball_pred.csv"))
