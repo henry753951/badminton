@@ -53,7 +53,7 @@ def get_model(model_name, num_frame, input_type):
     """
     # Import model
     if model_name == 'TrackNetV2':
-        from model import TrackNetV2 as TrackNet
+        from models.model import TrackNetV2 as TrackNet
 
     if model_name in ['TrackNetV2']:
         model = TrackNet(in_dim=num_frame*3, out_dim=num_frame)

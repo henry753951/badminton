@@ -1,6 +1,7 @@
 import os
 import queue
 import cv2
+import pandas as pd
 import numpy as np
 from PIL import Image, ImageDraw
 import csv
@@ -20,7 +21,7 @@ BATCH_SIZE = 1
 HEIGHT = 288
 WIDTH = 512
 mag = 1
-
+dataset_dir = "ball_dataset"
 
 # def custom_loss(y_true, y_pred):
 #     loss = (-1) * (
@@ -78,7 +79,7 @@ def getVector(pos1: list, pos2: list):
 
 
 
-checkpoint = torch.load("model_best.pt")
+checkpoint = torch.load("models/model_best.pt")
 param_dict = checkpoint['param_dict']
 model_name = param_dict['model_name']
 num_frame = param_dict['num_frame']
@@ -88,14 +89,15 @@ model.load_state_dict(checkpoint['model_state_dict'])
 model.eval()
 
 # 1 to 800
-for id in range(3, 801):
+for id in range(1, 801):
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     out = cv2.VideoWriter(F'new-{id}.mp4', fourcc, 30.0, (1280 ,720))
     # n = 0
     id = str(id).zfill(5)
-    video_filename = f"../train/{id}/{id}.mp4"
+    video_filename = f"train/{id}/{id}.mp4"
     start_frame = 0
     currentFrame = 0
+    df = pd.DataFrame(columns=["Frame", "x", "y","speed","vec x","vec y"])
 
     q = queue.deque()
     for i in range(0, 8):
@@ -104,7 +106,7 @@ for id in range(3, 801):
 
 
     try:
-        os.mkdir(f"dataset/{id}")
+        os.mkdir(F"{dataset_dir}/{id}")
     except:
         pass
     cap = cv2.VideoCapture(video_filename)
@@ -138,7 +140,7 @@ for id in range(3, 801):
     for i in range(len(h_lines)):
         l = h_lines[i][0]
         cv2.line(court, (l[0], l[1]), (l[2], l[3]), (0, 0, 255), 3, cv2.LINE_AA)
-    cv2.imshow("court", court)
+    # cv2.imshow("court", court)
     #
     if not ret:
         continue
@@ -152,8 +154,8 @@ for id in range(3, 801):
             ret, img = cap.read()
             if not ret:
                 break
-            cv2.imshow("frame", img)
-            out.write(img)
+            # cv2.imshow("frame", img)
+            # out.write(img)
             continue
 
         ret, img = cap.read()
@@ -195,10 +197,10 @@ for id in range(3, 801):
 
                 # sort by distance
                 
-                test = np.zeros_like(image)
-                cv2.drawContours(test, cnts, -1, (0, 255, 0), 3)
-                cv2.imshow("test", test)
-                cv2.circle(image_cp, (int(ratio *last_coordinate[0]),int( ratio *last_coordinate[1])), 5, (255, 255, 255), -1)
+                # test = np.zeros_like(image)
+                # cv2.drawContours(test, cnts, -1, (0, 255, 0), 3)
+                # cv2.imshow("test", test)
+                # cv2.circle(image_cp, (int(ratio *last_coordinate[0]),int( ratio *last_coordinate[1])), 5, (255, 255, 255), -1)
                 for i in range(len(rects)):
                     
                     curr_distance = int(math.sqrt(pow(rects[i][0]-last_coordinate[0],2)+pow(rects[i][1]-last_coordinate[1],2)))
@@ -212,7 +214,7 @@ for id in range(3, 801):
                             last_coordinate = [rects[i][0], rects[i][1]]
                             curr_distance = distance
                             max_area_idx = i
-                print(F" {curr_distance}  {str(speed/30)}" )
+                # print(F" {curr_distance}  {str(speed/30)}" )
                 if max_area_idx == -1:
                     x, y = (
                         0,
@@ -248,6 +250,7 @@ for id in range(3, 801):
                 
                 speed = getSpeed([pos_3[0][0], pos_3[0][1]], [pos_3[1][0], pos_3[1][1]],frame_num_t)[0]
                 vec = getVector([pos_3[0][0], pos_3[0][1]], [pos_3[1][0], pos_3[1][1]])
+                df.loc[len(df)] = (int(cc_frame), int(x), int(y) , speed/30, vec[0], vec[1])
                 cv2.putText(
                     image_cp,
                     "vec: " + str(vec),
@@ -308,5 +311,6 @@ for id in range(3, 801):
         ret, image2 = cap.read()
         ret, image3 = cap.read()
     print("finish")
+    df.to_csv(F"{dataset_dir}/{id}/dataset.csv", index=False)
     cap.release()
-    # out.release()
+    out.release()

@@ -1,6 +1,7 @@
 import numpy as np
 import cv2
 from math import atan, pi
+import math
 def is_in_court(line, court):
     '''
     判斷球是否在球場內
@@ -54,6 +55,7 @@ def check_white(hsv, lines, set_i):
     cv2.destroyAllWindows()
 #     print((white_line_region.sum() / line_mask.sum()))
     return (white_line_region.sum() / line_mask.sum()) > 0.03
+
 def find_edge(p1, p2, h, w):
     '''
     找出兩點在邊界上的點
@@ -107,7 +109,10 @@ def find_intersection(l1, l2):
     @l2: (x1,y1,x2,y2)
     @return: (x,y)
     '''
-
+    if len(l1) == 2:
+        l1 = np.array([l1[0][0],l1[0][1],l1[1][0],l1[1][1]])
+    if len(l2) == 2:
+        l2 = np.array([l2[0][0],l2[0][1],l2[1][0],l2[1][1]])
     with np.errstate(divide='ignore', invalid='ignore'):
         # s * (x - px) + py = y
         s1 = (l1[3] - l1[1]) / (l1[2] - l1[0])
@@ -197,7 +202,7 @@ def distance_to_line(line, x0, y0):
     # 計算點到直線的距離
     return abs(a * x0 + b * y0 + c) / np.sqrt(a ** 2 + b ** 2)
 
-import math
+
 def get_angle(line1, line2):
     d1 = (line1[1][0] - line1[0][0], line1[1][1] - line1[0][1])
     d2 = (line2[1][0] - line2[0][0], line2[1][1] - line2[0][1])

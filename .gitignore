@@ -2,3 +2,6 @@ trajectory_model
 *.mp4
 TrackNetV2
 *.pt
+train
+val
+ball_dataset/*

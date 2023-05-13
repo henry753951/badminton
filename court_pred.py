@@ -5,21 +5,24 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
 import pprint
 import random
-import utils 
+import utils.utils as utils 
 pp = pprint.PrettyPrinter(indent=4)
-# 讀取範例影片
-video = cv2.VideoCapture('match.mp4')
-
 # 記錄目前處理到第幾幀(從0開始)
 currentFrame = 0
 
 
+def get_position(x,y,matrix,inverse=False):
+    if inverse:
+        matrix = cv2.invert(matrix)[1]
+    old = np.float32([[x,y]])
+    old = np.array([old])
+    new = cv2.perspectiveTransform(old, matrix)
+    return new[0][0][0],new[0][0][1]
 
 
-
-for id in range(224, 801):
+for id in range(228, 801):
     id = str(id).zfill(5)
-    video_filename = F'../train/{id}/{id}.mp4'
+    video_filename = F'train/{id}/{id}.mp4'
     video = cv2.VideoCapture(video_filename)
 
     success,frame = video.read()
@@ -74,7 +77,7 @@ for id in range(224, 801):
     blur = cv2.GaussianBlur(gray,(kernel_size, kernel_size),0).astype(int)
     sub = gray.astype(int) - blur
     sharped_img = np.clip(gray.astype(int) + sub*5, a_min = 0, a_max = 255).astype('uint8')
-    cv2.imshow('sharped_img', sharped_img)
+    # cv2.imshow('sharped_img', sharped_img)
     # sharped_gray = cv2.cvtColor(sharped_img, cv2.COLOR_BGR2GRAY)
 
     edges = cv2.Canny(sharped_img, Canny_low_threshold, Canny_high_threshold, apertureSize=3)
@@ -88,12 +91,12 @@ for id in range(224, 801):
     m_lines = []
 
 
-    # test
-    test = image.copy()
-    for x1,y1,x2,y2 in lines.reshape(-1,4):
-        cv2.line(test, (x1,y1), (x2,y2), (0,255,0), 2)
-    cv2.imshow('test', test)
-    cv2.imshow('edge', edges)
+    # # test
+    # test = image.copy()
+    # for x1,y1,x2,y2 in lines.reshape(-1,4):
+    #     cv2.line(test, (x1,y1), (x2,y2), (0,255,0), 2)
+    # cv2.imshow('test', test)
+    # cv2.imshow('edge', edges)
 
 
     # filter out lines
@@ -105,10 +108,7 @@ for id in range(224, 801):
         check = mask[:, :,0][full_line[:,1], full_line[:,0]]
         if check.sum() >= len(check) * 0.5:
             m_lines.append(line)
-            
-    print(len(m_lines), 'Lines')
-
-
+        
 
     _h, _w, _ = image.shape
     e_m_lines = []
@@ -153,10 +153,9 @@ for id in range(224, 801):
     # Todo : 投影轉換 在量比例
     xxScale = 3 if easy_court else 2
     f=0
-    print(distance_each_line)
     for i, distance in enumerate(distance_each_line):
         if i < len(distance_each_line) - 1:
-            print(distance_each_line[i + 1]/distance )
+            # print(distance_each_line[i + 1]/distance )
             if distance_each_line[i + 1]/distance > xxScale:
                 f = i
                 break
@@ -173,10 +172,10 @@ for id in range(224, 801):
         for i in range(int(1080/2) + 100):
             rx = center+i
             lx = center-i
-            cv2.circle(image, (rx,cy), 5, (0,255,0), -1)
-            cv2.circle(image, (lx,cy), 5, (0,255,0), -1)
-            cv2.imshow("123",image)
-            cv2.waitKey(1)
+            # cv2.circle(image, (rx,cy), 5, (0,255,0), -1)
+            # cv2.circle(image, (lx,cy), 5, (0,255,0), -1)
+            # cv2.imshow("123",image)
+            # cv2.waitKey(1)
             for line in vertical_lines:
                 if(abs(line[0]-line[2]) < 60):
                     center_line = line
@@ -217,6 +216,7 @@ for id in range(224, 801):
     vertical_lines = temp2
 
 
+
     if center_line != None:
         l = 0
         r = 0
@@ -248,8 +248,105 @@ for id in range(224, 801):
         cv2.line(image,(x1,y1),(x2,y2),color,1)
 
     cv2.putText(image, id, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA) 
-    cv2.imshow("123",image)
+
+    print("corner :")
+    pprint.pprint(court_points["corner"])
+    court = {
+        "ld":[], # left down
+        "rd":[], # right down
+        "ld_1":[],
+        "rd_1":[],  
+        "ld_2":[],
+        "rd_2":[],  
+
+        "lu":[], # left up
+        "ru":[], # right up
+        "lu_1":[],
+        "ru_1":[],
+        "lu_2":[],
+        "ru_2":[],
+    }
+    sorted_corner = sorted(court_points["corner"],key=lambda ele: ele[1], reverse=True) # y desc 
+    sorted_by_x = sorted(sorted_corner[:4],key=lambda ele: ele[0]) # x asc
+    court["ld"] = sorted_by_x[0]
+    court["rd"] = sorted_by_x[-1]
+    sorted_by_x = sorted(sorted_corner[4:8],key=lambda ele: ele[0]) # x asc
+    court["ld_1"] = sorted_by_x[0]
+    court["rd_1"] = sorted_by_x[-1]
+    sorted_by_x = sorted(sorted_corner[8:12],key=lambda ele: ele[0]) # x asc
+    court["ld_2"] = sorted_by_x[0]
+    court["rd_2"] = sorted_by_x[-1]
+
+    cv2.circle(image, (int(court["ld"][0]),int(court["ld"][1])), 5, (255,255,0), 5)
+    cv2.circle(image, (int(court["rd"][0]),int(court["rd"][1])), 5, (0,255,255), 5)
+
+    # w = 5.18 m * 50
+    # h = 13.4 m * 30
+    # 進行透視變換
+
+
+    v_lines = sorted(vertical_lines,key=lambda ele: ele[0], reverse=True)
+    temp_line = [court["ld_2"].copy(), court["rd_2"].copy()]
+    t_lu = court["ld_2"]
+    t_ru = court["rd_2"]
+    for ty in range(500):
+
+        temp_line[0][1] = temp_line[0][1]-1
+        temp_line[1][1] = temp_line[1][1]-1
+
+        t_lu = utils.find_intersection(temp_line, v_lines[0])
+        t_ru = utils.find_intersection(temp_line, v_lines[-1])
+
+        if(t_lu<t_ru):
+            temp = t_lu
+            t_lu = t_ru
+            t_ru = temp
+
+        cv2.circle(image, (int(t_lu[0]),int(t_lu[1])), 5, (255,255,0), 1)
+        cv2.circle(image, (int(t_ru[0]),int(t_ru[1])), 5, (0,255,255), 1)
+
+        old = np.float32([t_ru, court["ld"],t_lu, court["rd"]])
+        new = np.float32([[0,0], [0,670-1],  [236-1,0] ,[236-1,670-1] ])
+
+        matrix = cv2.getPerspectiveTransform(old , new)
+        imgOutput = cv2.warpPerspective(frame, matrix, (236 , 670), cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0,0,0))
+
+
+        ld_Perspective = get_position(court["ld"][0],court["ld"][1],matrix)
+        ld2_Perspective = get_position(court["ld_2"][0],court["ld_2"][1],matrix)
+        t_lu_Perspective = get_position(t_lu[0],t_lu[1],matrix)
+
+        #  box height : court_height = 452 : 1340
+        court_height = abs(0 - ld_Perspective[1]) # court height
+        box_height = abs(ld2_Perspective[1] - ld_Perspective[1]) # box height
+        cv2.imshow("out",image)
+        cv2.waitKey(10)
+
+        print(int(ld_Perspective[0]),int(ld_Perspective[1]))
+        cv2.circle(imgOutput, (int(ld_Perspective[0]),int(ld_Perspective[1])), 3, (255,255,0), 3)
+        cv2.circle(imgOutput, (int(ld2_Perspective[0]),int(ld2_Perspective[1])), 3, (255,255,0), 3)
+        cv2.circle(imgOutput, (int(ld2_Perspective[0]),int(ld2_Perspective[1])), 3, (255,255,0), 3)
+        cv2.imshow("warpPerspective",imgOutput)
+        print("box_height/court_height : ",box_height/court_height)
+        
+
+        if(box_height/court_height < 452 / (1340-50)):
+
+            break
+        
+
+
+
+
+
+
+    print("court :")
+
+
+
     cv2.waitKey(0)
+
+
     
 
     # 釋放影片資源

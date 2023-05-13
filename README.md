@@ -1,14 +1,25 @@
 
-# Badminton
+# BadmintonAI
+## Requirement
+- Python 3.10
+- OpenCV
+- requirements.txt
 
+## Ball predit
+```
+  ball_pred.py
+```
+## Court predit
+```
+  court_pred.py
+```
 
 
 ## Dataset
-
 #### Generat ball position dataset
 
 ```
-  gen_dataset.py  # dataset-generator 
+  tools/gen_dataset.py  # dataset-generator 
 ```
 
 | Parameter | Type     | Description                |
@@ -20,17 +31,5 @@
 
 
 
-## Requirement
 
-
-
-```
-imutils==0.5.4
-keras==2.10.0
-numpy==1.24.3
-pandas==2.0.1
-piexif==1.1.3
-Pillow==9.5.0
-tensorflow==2.10.0
-```
 
