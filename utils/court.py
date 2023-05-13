@@ -3,12 +3,8 @@ import numpy as np
 import os,math
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import figure
-import pprint
 import random
 import utils.utils as utils 
-pp = pprint.PrettyPrinter(indent=4)
-# 記錄目前處理到第幾幀(從0開始)
-currentFrame = 0
 
 
 def get_position(x,y,matrix,inverse=False):
@@ -20,51 +16,49 @@ def get_position(x,y,matrix,inverse=False):
     return new[0][0][0],new[0][0][1]
 
 
-for id in range(1, 801):
-    id = str(id).zfill(5)
-    video_filename = F'val/{id}/{id}.mp4'
-    video = cv2.VideoCapture(video_filename)
+def get_court(frame,showWindow=False):
+    '''
+    輸出點順序，由橫線從下面到上面，每四點四點
+    四個點中，點從左到右
 
-    success,frame = video.read()
-    if not success:
+    @input: frame
+    @return [p[0],p[1],......p[23]]
+    '''
+    if not frame:
         print(F"Cannot read video file {id}")
-        break
+        return
 
-    try:
-        cv2.destroyWindow("court_mask")
-    except:
-        pass
-        corner = utils.getPerspectiveTransformMatrix(frame,  show_frame = False)
-        easy_court = True
-        if len(corner) == 4:
-            court_mask = np.zeros_like(frame)
-            cv2.fillPoly(court_mask, np.array([corner], dtype=np.int32), (255, 255, 255))
-            # cv2.imshow("court_mask", court_mask)
-            frame = cv2.bitwise_and(frame, court_mask)
-            Canny_low_threshold = 85
-            Canny_high_threshold = 85*3
-            rho = 1  # distance resolution in pixels of the Hough grid
-            theta = np.pi / 180  # angular resolution in radians of the Hough grid
-            threshold = 30  # minimum number of votes (intersections in Hough grid cell)
-            min_line_length = 100  # minimum number of pixels making up a line
-            max_line_gap = 5  # maximum gap in pixels between connectable line segments
-        else:
-            easy_court = False
-            pts = np.array([[[0, 0], [0, 0], [0, 0], [0, 0]]])
-            court_mask = np.ones_like(frame)
-            contrast =50
-            brightness = 40
-            frame = frame * (contrast/127 + 1) - contrast + brightness
-            frame = np.clip(frame, 0, 255)
-            frame = np.uint8(frame)
-            # 角點 與 霍夫線段參數
-            Canny_low_threshold = 15
-            Canny_high_threshold = 85*3
-            rho = 1  # distance resolution in pixels of the Hough grid
-            theta = np.pi / 180  # angular resolution in radians of the Hough grid
-            threshold = 150  # minimum number of votes (intersections in Hough grid cell)
-            min_line_length = 60  # minimum number of pixels making up a line
-            max_line_gap = 20  # maximum gap in pixels between connectable line segments    
+    corner = utils.getPerspectiveTransformMatrix(frame,  show_frame = False)
+    easy_court = True
+    if len(corner) == 4:
+        court_mask = np.zeros_like(frame)
+        cv2.fillPoly(court_mask, np.array([corner], dtype=np.int32), (255, 255, 255))
+        # cv2.imshow("court_mask", court_mask)
+        frame = cv2.bitwise_and(frame, court_mask)
+        Canny_low_threshold = 85
+        Canny_high_threshold = 85*3
+        rho = 1  # distance resolution in pixels of the Hough grid
+        theta = np.pi / 180  # angular resolution in radians of the Hough grid
+        threshold = 30  # minimum number of votes (intersections in Hough grid cell)
+        min_line_length = 100  # minimum number of pixels making up a line
+        max_line_gap = 5  # maximum gap in pixels between connectable line segments
+    else:
+        easy_court = False
+        pts = np.array([[[0, 0], [0, 0], [0, 0], [0, 0]]])
+        court_mask = np.ones_like(frame)
+        contrast =50
+        brightness = 40
+        frame = frame * (contrast/127 + 1) - contrast + brightness
+        frame = np.clip(frame, 0, 255)
+        frame = np.uint8(frame)
+        # 角點 與 霍夫線段參數
+        Canny_low_threshold = 15
+        Canny_high_threshold = 85*3
+        rho = 1  # distance resolution in pixels of the Hough grid
+        theta = np.pi / 180  # angular resolution in radians of the Hough grid
+        threshold = 150  # minimum number of votes (intersections in Hough grid cell)
+        min_line_length = 60  # minimum number of pixels making up a line
+        max_line_gap = 20  # maximum gap in pixels between connectable line segments    
     
     image = frame.copy()
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -89,15 +83,6 @@ for id in range(1, 801):
     mask = court_mask > 0
     mask = np.stack((mask,mask,mask), 2)
     m_lines = []
-
-
-    # # test
-    # test = image.copy()
-    # for x1,y1,x2,y2 in lines.reshape(-1,4):
-    #     cv2.line(test, (x1,y1), (x2,y2), (0,255,0), 2)
-    # cv2.imshow('test', test)
-    # cv2.imshow('edge', edges)
-
 
     # filter out lines
     for line in lines.reshape(-1,4):
@@ -124,8 +109,6 @@ for id in range(1, 801):
     horizontal_lines = [[x1,y1,x2,y2] for x1,y1,x2,y2 in e_m_lines if (abs(y1-y2)<=50).all()]
     vertical_lines = [[x1,y1,x2,y2] for x1,y1,x2,y2 in e_m_lines if (abs(y1-y2)>50).all()]
     h_slopes = [(line[1]-line[3]) / (line[0]-line[2]) for line in horizontal_lines]
-
-    
     
     if easy_court:  #若太多雜縣 mean 不準
         mean = np.mean(h_slopes)
@@ -155,7 +138,6 @@ for id in range(1, 801):
     f=0
     for i, distance in enumerate(distance_each_line):
         if i < len(distance_each_line) - 1:
-            # print(distance_each_line[i + 1]/distance )
             if distance_each_line[i + 1]/distance > xxScale:
                 f = i
                 break
@@ -172,10 +154,6 @@ for id in range(1, 801):
         for i in range(int(1080/2) + 100):
             rx = center+i
             lx = center-i
-            # cv2.circle(image, (rx,cy), 5, (0,255,0), -1)
-            # cv2.circle(image, (lx,cy), 5, (0,255,0), -1)
-            # cv2.imshow("123",image)
-            # cv2.waitKey(1)
             for line in vertical_lines:
                 if(abs(line[0]-line[2]) < 60):
                     center_line = line
@@ -188,9 +166,6 @@ for id in range(1, 801):
                 continue
             break
         vertical_lines = temp
-
-
-
 
     temp1 = []
     temp2 = []
@@ -235,10 +210,6 @@ for id in range(1, 801):
 
     if len(court_points["corner"])==12:
         cv2.putText(image, ": )", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (200, 255, 255), 2, cv2.LINE_AA)
-    # else:
-    #     cv2.putText(image, ": (", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (200, 255, 255), 2, cv2.LINE_AA)
-
-
 
     for x1,y1,x2,y2 in horizontal_lines:
         color = random.choice([(255,0,255)])
@@ -249,8 +220,6 @@ for id in range(1, 801):
 
     cv2.putText(image, id, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA) 
 
-    print("corner :")
-    pprint.pprint(court_points["corner"])
     court = {
         "ld":[], # left down
         "rd":[], # right down
@@ -334,27 +303,13 @@ for id in range(1, 801):
     final_point.append(get_position(18,0,matrix,True))
     final_point.append(get_position(236-18,0,matrix,True))
     final_point.append(get_position(236,0,matrix,True))
-    
-
-    for p in final_point:
-        cv2.circle(image, (int(p[0]),int(p[1])),5, (130,100,200), 2)
-    cv2.imshow("out",image)
-    cv2.imshow("warpPerspective",imgOutput)
-    cv2.waitKey(10)
 
 
+    if showWindow:
+        for p in final_point:
+            cv2.circle(image, (int(p[0]),int(p[1])),5, (130,100,200), 2)
+        cv2.imshow("court show",image)
+        cv2.imshow("court Perspective",imgOutput)
+        cv2.waitKey(10)
 
-
-
-
-    print("court :")
-
-
-
-    cv2.waitKey(0)
-
-
-    
-
-    # 釋放影片資源
-    video.release()
+    return final_point
