@@ -216,7 +216,7 @@ def get_court(frame,showWindow=False):
         color = random.choice([(255,0,0)])
         cv2.line(image,(x1,y1),(x2,y2),color,1)
 
-    cv2.putText(image, id, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA) 
+    # cv2.putText(image, id, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA) 
 
     court = {
         "ld":[], # left down
