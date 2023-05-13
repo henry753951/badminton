@@ -15,8 +15,11 @@ for id in range(1, 801):
     success,frame = video.read()
     a,c = court.get_court(frame)
     print(c)
+    i=0
     for p in a:
         cv2.circle(frame, (int(p[0]), int(p[1])), 5, (0, 0, 255), -1)
+        cv2.putText(frame, str(i), (int(p[0]+5), int(p[1]+3)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
+        i+=1
     for p in c:
         cv2.circle(frame, (int(p[0]), int(p[1])), 5, (0, 255, 255), -1)
     cv2.imshow('frame',frame)

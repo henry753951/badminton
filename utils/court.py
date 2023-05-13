@@ -227,7 +227,18 @@ def get_court(frame,showWindow=False):
         "rd_2":[],  
 
     }
-    final_point = [e for e in sorted(court_points["corner"],key=lambda ele: ele[1], reverse=True)]
+    final_point = []
+    a=sorted(court_points["corner"],key=lambda ele: ele[1], reverse=True)[0:4]
+    a.sort(key=lambda ele: ele[0])
+    final_point +=  a
+    a=sorted(court_points["corner"],key=lambda ele: ele[1], reverse=True)[4:8]
+    a.sort(key=lambda ele: ele[0])
+    final_point +=  a
+    a=sorted(court_points["corner"],key=lambda ele: ele[1], reverse=True)[8:12]
+    a.sort(key=lambda ele: ele[0])
+    final_point +=  a
+
+
     sorted_corner = sorted(court_points["corner"],key=lambda ele: ele[1], reverse=True) # y desc 
     sorted_by_x = sorted(sorted_corner[:4],key=lambda ele: ele[0]) # x asc
     court["ld"] = sorted_by_x[0]
@@ -238,7 +249,6 @@ def get_court(frame,showWindow=False):
     sorted_by_x = sorted(sorted_corner[8:12],key=lambda ele: ele[0]) # x asc
     court["ld_2"] = sorted_by_x[0]
     court["rd_2"] = sorted_by_x[-1]
-
     cv2.circle(image, (int(court["ld"][0]),int(court["ld"][1])), 5, (255,255,0), 5)
     cv2.circle(image, (int(court["rd"][0]),int(court["rd"][1])), 5, (0,255,255), 5)
 
@@ -248,6 +258,7 @@ def get_court(frame,showWindow=False):
 
 
     v_lines = sorted(vertical_lines,key=lambda ele: ele[0], reverse=True)
+
     temp_line = [court["ld_2"].copy(), court["rd_2"].copy()]
     t_lu = court["ld_2"]
     t_ru = court["rd_2"]
